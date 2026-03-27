@@ -331,62 +331,8 @@ body::after {
   </div>
 </div>
 
+<script src="config.js"></script>
 <script>
-/* ═══ CONFIG ═══ */
-const GAME_CONFIG = {
-  levels:[
-    { id:1,  name:"MISSIONE 01", subtitle:"ROTTA PIATTA",
-      desc:"Vola lungo una retta orizzontale. Il corridoio è dritto come un raggio laser.",
-      center:x=>0,           halfW:1.2, xRange:[-7,7], timeLimit:90,
-      hint:"Retta orizzontale",
-      solution:"Y = 0\n\nLa Y rimane sempre 0: una retta perfettamente piatta." },
-    { id:2,  name:"MISSIONE 02", subtitle:"ROTTA INCLINATA",
-      desc:"Il corridoio sale diagonalmente. Segui l'inclinazione!",
-      center:x=>x,           halfW:1.1, xRange:[-6,6], timeLimit:90,
-      hint:"Retta inclinata (pendenza 1)",
-      solution:"Y = X\n\nOgni unità a destra, sali di una unità." },
-    { id:3,  name:"MISSIONE 03", subtitle:"PENDENZA DOPPIA",
-      desc:"Salita ripida! La pendenza è doppia rispetto a prima.",
-      center:x=>2*x-1,       halfW:1.0, xRange:[-4,4], timeLimit:100,
-      hint:"Retta con pendenza e intercetta",
-      solution:"Y = 2*X - 1\n\nPendenza 2, intercetta -1 sull'asse Y." },
-    { id:4,  name:"MISSIONE 04", subtitle:"ARCO PARABOLICO",
-      desc:"Il corridoio curva! Non è più dritto: segui la parabola.",
-      center:x=>0.3*x*x-2,   halfW:1.1, xRange:[-5,5], timeLimit:110,
-      hint:"Parabola",
-      solution:"Y = 0.3*X^2 - 2\n\nParabola con vertice in (0, -2)." },
-    { id:5,  name:"MISSIONE 05", subtitle:"ARCO TRASLATO",
-      desc:"L'arco è spostato lateralmente. Il vertice non è più all'origine!",
-      center:x=>(x-2)*(x-2)-3, halfW:1.1, xRange:[-2,6], timeLimit:120,
-      hint:"Parabola traslata",
-      solution:"Y = (X-2)^2 - 3\n\nVertice in (2, -3)." },
-    { id:6,  name:"MISSIONE 06", subtitle:"ONDA SINUSOIDALE",
-      desc:"Il corridoio ondeggia come un serpente cosmico!",
-      center:x=>2*Math.sin(x), halfW:1.0, xRange:[-6,6], timeLimit:130,
-      hint:"Sinusoide",
-      solution:"Y = 2*sin(X)\n\nAmpiezza 2, periodo 2π (~6.28)." },
-    { id:7,  name:"MISSIONE 07", subtitle:"ZONA RISTRETTA",
-      desc:"Corridoio stretto! Massima precisione richiesta.",
-      center:x=>0.5*x*x-x,   halfW:0.85, xRange:[-3,5], timeLimit:130,
-      hint:"Parabola con termine lineare",
-      solution:"Y = 0.5*X^2 - X\n\nVertice in (1, -0.5)." },
-    { id:8,  name:"MISSIONE 08", subtitle:"CAMPO IPERBOLICOO",
-      desc:"Una forza gravitazionale divide lo spazio in due. Scegli un lato!",
-      center:x=>Math.abs(x)<0.5?null:3/x, halfW:1.0, xRange:[-6,6], timeLimit:140,
-      hint:"Iperbole",
-      solution:"Y = 3/X\n\nPassi dal ramo destro (X positivo) o sinistro (X negativo).\nX = 0 è una zona proibita!" },
-    { id:9,  name:"MISSIONE 09", subtitle:"ONDA SMORZATA",
-      desc:"Il corridoio pulsa sempre meno. Resta al centro!",
-      center:x=>Math.sin(x*2)*(4/(x*x+1)), halfW:0.9, xRange:[-5,5], timeLimit:150,
-      hint:"Funzione smorzata",
-      solution:"Y = sin(2*X) * 4/(X^2+1)\n\nL'ampiezza si riduce allontanandosi dall'origine." },
-    { id:10, name:"MISSIONE 10", subtitle:"BOSS: ROTTA IMPOSSIBILE",
-      desc:"Solo le navigatrici più abili arrivano in fondo. Buona fortuna!",
-      center:x=>Math.sin(x)*x*0.5+Math.cos(x*0.7), halfW:0.85, xRange:[-5,5], timeLimit:180,
-      hint:"Funzione composita avanzata",
-      solution:"Y = X*sin(X)*0.5 + cos(X*0.7)\n\nCombina oscillazione lineare crescente e coseno modulato." },
-  ]
-};
 
 /* ═══ SPRITE DRAWING ═══ */
 // Navicella pixel 10×8, orientata a destra (punta a dx)
@@ -552,10 +498,10 @@ function genAsteroids(lvl, W, H, scale, ox, oy){
   while(asts.length<22 && tries<600){
     tries++;
     const wx=xMn+(xMx-xMn)*Math.random();
-    const cy=lvl.center(wx);
+    const cy=evalEq(lvl.equation, wx);
     if(cy===null) continue;
     const side=Math.random()<0.5?1:-1;
-    const wy=cy+side*(lvl.halfW+0.35+Math.random()*3.5);
+    const wy=cy+side*(lvl.corridorHalfW+0.35+Math.random()*3.5);
     const cx=ox+wx*scale, canY=oy-wy*scale;
     if(cx<-40||cx>W+40||canY<-40||canY>H+40) continue;
     asts.push({wx,wy,size:9+Math.random()*18,seed:Math.random()*99,
@@ -577,15 +523,25 @@ function genAsteroids(lvl, W, H, scale, ox, oy){
     });
     picker.appendChild(b);
   });
-  $('shipNameInput').addEventListener('input',()=>{ S.shipName=($('shipNameInput').value.trim()||'AURORA').toUpperCase(); });
+  $('shipNameInput').addEventListener('input',()=>{ S.shipName=($('shipNameInput').value.trim()||GAME_CONFIG.defaultShipName||'AURORA').toUpperCase(); });
   $('btnStart').addEventListener('click',()=>{
-    S.shipName=($('shipNameInput').value.trim()||'AURORA').toUpperCase();
+    S.shipName=($('shipNameInput').value.trim()||GAME_CONFIG.defaultShipName||'AURORA').toUpperCase();
     initLevels(); show('screen-levels');
   });
   $('btnCredits').addEventListener('click',()=>{
     alert('🚀 ISTRUZIONI:\n\n1. Scrivi Y = ... nella casella traiettoria\n2. Premi LANCIA\n3. Se la navicella rimane nel corridoio verde → SUCCESSO!\n4. Se tocca un asteroide → ESPLOSIONE!\n\nPuoi lanciare più volte con equazioni diverse.\n\nSINTASSI:\n  X^2  sin(X)  cos(X)  sqrt(X)  abs(X)\n  2*X oppure 2X\n  (X-1)^2  X^2 + X - 1\n\nIn bocca al lupo, navigatrice! 🌟');
   });
   drawIntroShip();
+})();
+
+// Apply config title/subtitle to intro screen
+(function applyConfigMeta(){
+  const t=document.querySelector('.pixel-title');
+  const s=document.querySelector('.pixel-subtitle');
+  if(t&&GAME_CONFIG.title)   t.textContent=GAME_CONFIG.title;
+  if(s&&GAME_CONFIG.subtitle) s.textContent=GAME_CONFIG.subtitle;
+  const inp=document.getElementById('shipNameInput');
+  if(inp&&GAME_CONFIG.defaultShipName) inp.value=GAME_CONFIG.defaultShipName;
 })();
 
 function drawIntroShip(){
@@ -695,8 +651,8 @@ function tickAnim(dt){
     if(a.wy===null){ boom(a.wx, 0); return; }
 
     // corridor check
-    const cy=G.lvl.center(a.wx);
-    if(cy!==null && Math.abs(a.wy-cy)>G.lvl.halfW){ boom(a.wx,a.wy); return; }
+    const cy=evalEq(lvl.equation, a.wx);
+    if(cy!==null && Math.abs(a.wy-cy)>G.lvl.corridorHalfW){ boom(a.wx,a.wy); return; }
 
     // compute tangent angle for rotation
     const eps=0.05, wy2=evalEq(a.expr,a.wx+eps)||a.wy;
@@ -779,10 +735,10 @@ function drawCorridor(ctx,W,H){
   const step=3;
   for(let px=0;px<=W;px+=step){
     const wx=c2w(px,0).wx;
-    const cy=G.lvl.center(wx);
+    const cy=evalEq(lvl.equation, wx);
     if(cy===null) continue;
-    const{cy:top}   =w2c(wx,cy+G.lvl.halfW);
-    const{cy:bottom}=w2c(wx,cy-G.lvl.halfW);
+    const{cy:top}   =w2c(wx,cy+G.lvl.corridorHalfW);
+    const{cy:bottom}=w2c(wx,cy-G.lvl.corridorHalfW);
     ctx.fillStyle='rgba(46,219,138,0.055)';
     ctx.fillRect(px,top,step+1,Math.max(1,bottom-top));
   }
@@ -793,9 +749,9 @@ function drawCorridor(ctx,W,H){
     let pen=false;
     for(let px=0;px<=W;px+=2){
       const wx=c2w(px,0).wx;
-      const cy=G.lvl.center(wx);
+      const cy=evalEq(lvl.equation, wx);
       if(cy===null){pen=false;continue;}
-      const wy=cy+(side==='top'?G.lvl.halfW:-G.lvl.halfW);
+      const wy=cy+(side==='top'?G.lvl.corridorHalfW:-G.lvl.corridorHalfW);
       const{cy:cY}=w2c(wx,wy);
       if(!pen){ctx.moveTo(px,cY);pen=true;}else ctx.lineTo(px,cY);
     }
@@ -849,7 +805,7 @@ function drawAsteroids(ctx){
 function drawPlanets(ctx,W,H){
   const lvl=G.lvl;
   const[xMn,xMx]=lvl.xRange;
-  const cyFrom=lvl.center(xMn)||0, cyTo=lvl.center(xMx)||0;
+  const cyFrom=evalEq(lvl.equation, xMn)||0, cyTo=evalEq(lvl.equation, xMx)||0;
   const{cx:px1,cy:py1}=w2c(xMn,cyFrom);
   const{cx:px2,cy:py2}=w2c(xMx,cyTo);
 
