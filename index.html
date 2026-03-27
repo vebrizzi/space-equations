@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EQUAZIONE SPAZIALE</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+:root {
+  --magenta: #b5107a;
+  --teal:    #1a8fa0;
+  --mint:    #2edb8a;
+  --yellow:  #f2e840;
+  --orange:  #f0922a;
+  --dark:    #07080f;
+  --space:   #0a0d1a;
+  --ui-bg:   #0d1520;
+  --ui-mid:  #132030;
+  --white:   #e8f4ff;
+}
+
+* { box-sizing:border-box; margin:0; padding:0; image-rendering:pixelated; }
+
+html, body {
+  width:100%; height:100%;
+  background: var(--space);
+  font-family: 'Press Start 2P', monospace;
+  color: var(--white);
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Crect x='0' y='0' width='8' height='8' fill='%23f2e840'/%3E%3Crect x='8' y='0' width='8' height='8' fill='%2307080f'/%3E%3Crect x='0' y='8' width='8' height='8' fill='%2307080f'/%3E%3Crect x='8' y='8' width='8' height='8' fill='%23f2e840'/%3E%3C/svg%3E") 8 8, crosshair;
+  overflow:hidden;
+}
+body::after {
+  content:''; position:fixed; inset:0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(0,0,0,0.07) 1px, rgba(0,0,0,0.07) 2px);
+  pointer-events:none; z-index:9999;
+}
+
+.screen { display:none; position:relative; z-index:1; }
+.screen.active { display:flex; }
+
+/* ════ INTRO ════ */
+#screen-intro {
+  flex-direction:column; align-items:center; justify-content:center;
+  min-height:100vh; gap:20px; padding:24px;
+  background: radial-gradient(ellipse at 50% 30%, #0f1f40 0%, #07080f 70%);
+}
+#screen-intro::before {
+  content:''; position:absolute; inset:0; pointer-events:none; z-index:0;
+  background-image:
+    radial-gradient(1px 1px at 8%  12%, #fff  0%, transparent 100%),
+    radial-gradient(1px 1px at 22% 38%, #adf  0%, transparent 100%),
+    radial-gradient(1px 1px at 38%  8%, #fff  0%, transparent 100%),
+    radial-gradient(1px 1px at 58% 22%, #ffa  0%, transparent 100%),
+    radial-gradient(1px 1px at 72% 58%, #fff  0%, transparent 100%),
+    radial-gradient(1px 1px at 84% 18%, #adf  0%, transparent 100%),
+    radial-gradient(1px 1px at 92% 72%, #fff  0%, transparent 100%),
+    radial-gradient(2px 2px at 14% 68%, rgba(255,255,255,.5) 0%, transparent 100%),
+    radial-gradient(2px 2px at 48% 82%, rgba(255,255,255,.5) 0%, transparent 100%),
+    radial-gradient(2px 2px at 78% 42%, rgba(255,255,255,.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 32% 52%, #fff  0%, transparent 100%),
+    radial-gradient(1px 1px at 52% 68%, #ffa  0%, transparent 100%),
+    radial-gradient(1px 1px at 68% 88%, #adf  0%, transparent 100%),
+    radial-gradient(1px 1px at  4% 48%, #fff  0%, transparent 100%),
+    radial-gradient(1px 1px at 96%  8%, #fff  0%, transparent 100%);
+}
+
+.title-card {
+  background: rgba(13,21,32,0.92);
+  padding:24px 32px; text-align:center; max-width:580px; width:100%;
+  border:4px solid var(--teal); box-shadow:8px 8px 0 var(--dark);
+  position:relative; z-index:1;
+}
+.pixel-title {
+  font-size:1.4rem; color:var(--yellow);
+  text-shadow:0 0 20px rgba(242,232,64,0.5), 4px 4px 0 var(--dark);
+  letter-spacing:2px; line-height:2.2;
+}
+.pixel-subtitle { font-size:0.52rem; color:var(--mint); margin-top:6px; line-height:2.4; }
+
+.intro-form {
+  background: rgba(13,21,32,0.92);
+  padding:20px 24px; max-width:580px; width:100%;
+  display:flex; flex-direction:column; gap:16px;
+  border:4px solid var(--teal); box-shadow:8px 8px 0 var(--dark);
+  position:relative; z-index:1;
+}
+
+.px-label { font-size:0.52rem; color:var(--mint); margin-bottom:5px; display:block; letter-spacing:1px; }
+.px-input {
+  width:100%; background:var(--dark); border:4px solid var(--teal);
+  padding:10px 12px; font-family:'Press Start 2P',monospace;
+  font-size:0.62rem; color:var(--yellow); outline:none;
+}
+.px-input:focus { border-color:var(--yellow); }
+
+.color-row { display:flex; gap:8px; flex-wrap:wrap; }
+.ship-color-btn {
+  width:34px; height:34px; border:4px solid var(--dark); cursor:pointer; transition:transform 0.05s;
+}
+.ship-color-btn:hover  { transform:translate(-2px,-2px); box-shadow:2px 2px 0 var(--yellow); }
+.ship-color-btn.sel    { box-shadow:0 0 0 3px var(--yellow),3px 3px 0 var(--dark); }
+
+.px-btn {
+  background:var(--magenta); color:var(--white);
+  border:4px solid var(--dark); box-shadow:5px 5px 0 var(--dark);
+  font-family:'Press Start 2P',monospace; font-size:0.58rem;
+  padding:11px 18px; cursor:pointer; text-transform:uppercase; letter-spacing:1px;
+  transition:transform 0.06s, box-shadow 0.06s;
+}
+.px-btn:hover  { transform:translate(-2px,-2px); box-shadow:7px 7px 0 var(--dark); }
+.px-btn:active { transform:translate(3px,3px);   box-shadow:2px 2px 0 var(--dark); }
+.px-btn.teal   { background:var(--teal); }
+.px-btn.yellow { background:var(--yellow); color:var(--dark); }
+.px-btn.ghost  { background:var(--ui-mid); color:var(--mint); border-color:var(--teal); }
+.px-btn.small  { font-size:0.42rem; padding:8px 13px; }
+
+/* ════ LEVELS ════ */
+#screen-levels {
+  flex-direction:column; align-items:center;
+  min-height:100vh; padding:24px; gap:14px; overflow-y:auto;
+  background: radial-gradient(ellipse at 50% 0%, #0f1f40 0%, #07080f 60%);
+}
+.levels-title { font-size:0.85rem; color:var(--yellow); text-shadow:3px 3px 0 var(--dark); text-align:center; }
+.levels-grid {
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr));
+  gap:12px; max-width:940px; width:100%;
+}
+.level-tile {
+  background:var(--ui-mid); border:4px solid var(--teal);
+  box-shadow:5px 5px 0 var(--dark); padding:14px 12px;
+  cursor:pointer; position:relative; transition:transform 0.06s, box-shadow 0.06s;
+}
+.level-tile:hover:not(.locked) { transform:translate(-2px,-2px); box-shadow:7px 7px 0 var(--dark); }
+.level-tile.locked { opacity:0.5; cursor:not-allowed; border-color:var(--ui-mid); }
+.level-tile.done   { border-color:var(--yellow); }
+.lv-num  { font-size:0.42rem; color:var(--orange); background:var(--dark); display:inline-block; padding:3px 8px; border:2px solid var(--orange); margin-bottom:8px; }
+.lv-name { font-size:0.5rem;  color:var(--white); line-height:2; margin-bottom:4px; }
+.lv-desc { font-size:0.34rem; color:var(--mint);  line-height:2.2; }
+.lv-stars { font-size:0.8rem; margin-top:8px; }
+
+/* ════ GAME ════ */
+#screen-game { flex-direction:column; height:100vh; overflow:hidden; }
+
+.topbar {
+  background:var(--ui-bg); border-bottom:4px solid var(--teal);
+  display:flex; align-items:center; justify-content:space-between;
+  padding:7px 12px; gap:10px; flex-shrink:0; flex-wrap:wrap;
+}
+.topbar-left { display:flex; align-items:center; gap:10px; }
+.lv-badge-top { background:var(--magenta); color:var(--white); border:3px solid var(--dark); font-size:0.46rem; padding:4px 8px; box-shadow:3px 3px 0 var(--dark); }
+.lv-name-top  { font-size:0.42rem; color:var(--yellow); }
+.hud { display:flex; gap:10px; align-items:center; }
+.hud-block { background:var(--dark); color:var(--yellow); padding:4px 10px; font-size:0.62rem; border:3px solid var(--teal); min-width:60px; text-align:center; line-height:2; }
+.hud-block .hud-l { font-size:0.32rem; color:var(--mint); display:block; }
+.hud-block.danger { border-color:var(--orange); color:var(--orange); animation:blink 0.5s step-start infinite; }
+@keyframes blink { 50%{opacity:0.3;} }
+
+.game-body { display:flex; flex:1; overflow:hidden; }
+.canvas-wrap { flex:1; position:relative; overflow:hidden; background:var(--space); }
+#gameCanvas  { display:block; width:100%; height:100%; }
+
+/* sidebar */
+.sidebar {
+  width:268px; min-width:248px;
+  background:var(--ui-mid); border-left:4px solid var(--teal);
+  display:flex; flex-direction:column; gap:9px; padding:11px 10px; overflow-y:auto;
+}
+.sidebar-block { background:var(--ui-bg); border:3px solid var(--teal); padding:8px 10px; }
+.sidebar-block-title { font-size:0.42rem; color:var(--mint); text-transform:uppercase; letter-spacing:1px; margin-bottom:7px; border-bottom:2px solid var(--teal); padding-bottom:4px; }
+
+.eq-input {
+  width:100%; background:var(--dark); color:var(--yellow);
+  border:3px solid var(--teal); padding:7px 8px;
+  font-family:'Press Start 2P',monospace; font-size:0.5rem;
+  outline:none; caret-color:var(--mint);
+}
+.eq-input:focus { border-color:var(--yellow); }
+.eq-input.error { border-color:#ff4444; color:#ff8888; }
+.error-px { font-size:0.34rem; color:#ff6b6b; min-height:1.1em; line-height:2; margin-top:2px; }
+.eq-prefix-label { font-size:0.46rem; color:var(--mint); margin-bottom:5px; display:block; }
+
+.curves-list { display:flex; flex-direction:column; gap:4px; max-height:80px; overflow-y:auto; }
+.curve-row { display:flex; align-items:center; gap:6px; background:var(--dark); padding:4px 6px; border:2px solid rgba(46,219,138,0.2); font-size:0.32rem; color:var(--yellow); font-family:'Press Start 2P',monospace; }
+.curve-px  { width:10px; height:10px; flex-shrink:0; border:2px solid rgba(255,255,255,0.3); }
+.curve-remove-btn { margin-left:auto; background:none; border:none; cursor:pointer; color:var(--mint); font-size:0.5rem; line-height:1; padding:0; font-family:'Press Start 2P',monospace; }
+.curve-remove-btn:hover { color:var(--magenta); }
+
+.mission-box { background:var(--ui-bg); border:3px solid var(--orange); padding:8px 10px; font-size:0.34rem; color:var(--white); line-height:2.4; }
+.mission-title { font-size:0.4rem; color:var(--orange); margin-bottom:5px; display:block; }
+
+.status-bar { background:var(--dark); border:3px solid var(--teal); padding:6px 9px; font-size:0.38rem; color:var(--mint); text-align:center; line-height:2; min-height:2.4em; display:flex; align-items:center; justify-content:center; }
+.status-bar.ok  { border-color:var(--mint);   color:var(--mint); }
+.status-bar.err { border-color:var(--orange);  color:var(--orange); }
+.status-bar.fly { border-color:var(--yellow);  color:var(--yellow); }
+
+.hint-px { font-size:0.38rem; color:var(--white); cursor:pointer; background:var(--teal); border:3px solid var(--yellow); padding:7px 9px; line-height:2.5; }
+.hint-body { display:none; margin-top:5px; font-size:0.34rem; color:var(--yellow); line-height:2.6; border-top:2px solid var(--yellow); padding-top:4px; white-space:pre-wrap; }
+.hint-body.show { display:block; }
+.sol-px  { font-size:0.38rem; color:var(--dark); cursor:pointer; background:var(--magenta); border:3px solid var(--yellow); padding:7px 9px; line-height:2.5; }
+.sol-body { display:none; margin-top:5px; font-size:0.34rem; color:var(--yellow); line-height:2.6; border-top:2px solid var(--yellow); padding-top:4px; white-space:pre-wrap; }
+.sol-body.show { display:block; }
+
+/* overlay */
+.overlay { position:fixed; inset:0; background:rgba(7,8,15,0.88); display:none; align-items:center; justify-content:center; z-index:999; backdrop-filter:blur(3px); }
+.overlay.on { display:flex; }
+.overlay-card { background:var(--ui-mid); border:5px solid var(--yellow); box-shadow:10px 10px 0 var(--dark); padding:28px 32px; max-width:440px; width:90%; text-align:center; animation:pixelpop 0.2s steps(4) both; }
+@keyframes pixelpop { from{transform:scale(0);} to{transform:scale(1);} }
+.overlay-icon  { font-size:3rem;  margin-bottom:12px; display:block; }
+.overlay-title { font-size:0.85rem; color:var(--yellow); text-shadow:3px 3px 0 var(--dark); margin-bottom:8px; line-height:2; }
+.overlay-msg   { font-size:0.4rem;  color:var(--mint);   line-height:2.8; margin-bottom:12px; }
+.overlay-score { font-size:1rem;   color:var(--white);  margin-bottom:18px; }
+.overlay-btns  { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+
+.pxc { position:fixed; top:-32px; pointer-events:none; z-index:1000; font-size:1.3rem; animation:pxfall linear forwards; }
+@keyframes pxfall { to{top:110vh; transform:rotate(var(--r)) translateX(var(--dx)); opacity:0;} }
+
+::-webkit-scrollbar { width:6px; }
+::-webkit-scrollbar-track { background:var(--ui-bg); }
+::-webkit-scrollbar-thumb { background:var(--teal); }
+
+@media(max-width:640px){
+  .game-body { flex-direction:column; }
+  .sidebar { width:100%; min-width:unset; border-left:none; border-top:4px solid var(--teal); max-height:260px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ════ INTRO ════ -->
+<section id="screen-intro" class="screen active">
+  <div class="title-card">
+    <div class="pixel-title">🚀 EQUAZIONE SPAZIALE</div>
+    <div class="pixel-subtitle">▶ PILOTA LA NAVICELLA ATTRAVERSO IL CORRIDOIO LIBERO!</div>
+    <div style="display:flex;justify-content:center;margin:14px 0;">
+      <canvas id="introShip" width="90" height="70" style="image-rendering:pixelated;"></canvas>
+    </div>
+  </div>
+  <div class="intro-form">
+    <div>
+      <span class="px-label">▷ NOME DELLA NAVICELLA</span>
+      <input class="px-input" id="shipNameInput" type="text" placeholder="ES: AURORA" maxlength="12" value="AURORA">
+    </div>
+    <div>
+      <span class="px-label">▷ COLORE</span>
+      <div class="color-row" id="colorPicker"></div>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <button class="px-btn yellow" id="btnStart">▶ DECOLLO!</button>
+      <button class="px-btn small ghost" id="btnCredits">? ISTRUZIONI</button>
+    </div>
+  </div>
+</section>
+
+<!-- ════ LEVELS ════ -->
+<section id="screen-levels" class="screen" style="flex-direction:column;align-items:center;min-height:100vh;padding:24px;gap:14px;overflow-y:auto;background:radial-gradient(ellipse at 50% 0%,#0f1f40 0%,#07080f 60%);">
+  <div class="levels-title">★ SCEGLI LA MISSIONE ★</div>
+  <div class="levels-grid" id="levelsGrid"></div>
+  <button class="px-btn small ghost" id="btnBackIntro" style="margin-top:4px">◀ CAMBIA NAVICELLA</button>
+</section>
+
+<!-- ════ GAME ════ -->
+<section id="screen-game" class="screen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="px-btn small ghost" id="btnBackLevels">◀</button>
+      <div>
+        <div class="lv-badge-top" id="topbarBadge">MISSIONE 01</div>
+        <div class="lv-name-top"  id="topbarName">—</div>
+      </div>
+    </div>
+    <div class="hud">
+      <div class="hud-block"><span class="hud-l">LANCI</span><span id="hudAttempts">0</span></div>
+      <div class="hud-block" id="timerBlock"><span class="hud-l">TEMPO</span><span id="hudTimer">90</span></div>
+      <div class="hud-block"><span class="hud-l">SCORE</span><span id="hudScore">0</span></div>
+    </div>
+  </div>
+
+  <div class="game-body">
+    <div class="canvas-wrap"><canvas id="gameCanvas"></canvas></div>
+    <aside class="sidebar">
+
+      <div class="mission-box">
+        <span class="mission-title">📡 BRIEFING</span>
+        <span id="missionDesc">Trova la traiettoria giusta!</span>
+      </div>
+
+      <div class="sidebar-block">
+        <div class="sidebar-block-title">✏ TRAIETTORIA</div>
+        <span class="eq-prefix-label">Y =</span>
+        <input class="eq-input" id="eqInput" type="text" placeholder="X + 1" autocomplete="off" spellcheck="false">
+        <div class="error-px" id="eqError"></div>
+        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
+          <button class="px-btn small yellow" id="btnLaunch" style="flex:1">🚀 LANCIA</button>
+          <button class="px-btn small ghost"  id="btnReset">✕ RESET</button>
+        </div>
+      </div>
+
+      <div class="status-bar" id="statusBar">IN ATTESA DELLA TRAIETTORIA...</div>
+
+      <div class="sidebar-block">
+        <div class="sidebar-block-title">📈 TRAIETTORIE</div>
+        <div class="curves-list" id="curvesList"></div>
+      </div>
+
+      <div class="hint-px" id="hintBox">
+        <span id="hintToggle">💡 TIPO DI EQUAZIONE ▼</span>
+        <div class="hint-body" id="hintBody"></div>
+      </div>
+      <div class="sol-px" id="solBox">
+        <span id="solToggle">🔑 SOLUZIONE ▼</span>
+        <div class="sol-body" id="solBody"></div>
+      </div>
+
+    </aside>
+  </div>
+</section>
+
+<!-- ════ OVERLAY ════ -->
+<div class="overlay" id="overlay">
+  <div class="overlay-card">
+    <span class="overlay-icon" id="overlayIcon">🎉</span>
+    <div class="overlay-title" id="overlayTitle">MISSIONE COMPIUTA!</div>
+    <div class="overlay-msg"   id="overlayMsg">La navicella ha attraversato il corridoio!</div>
+    <div class="overlay-score" id="overlayScore">1500 PT</div>
+    <div class="overlay-btns">
+      <button class="px-btn yellow" id="btnNextLevel">NEXT ▶</button>
+      <button class="px-btn ghost"  id="btnRetry">↩ RIPROVA</button>
+      <button class="px-btn small teal" id="btnOverlayLevels">🗺 MISSIONI</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══ CONFIG ═══ */
+const GAME_CONFIG = {
+  levels:[
+    { id:1,  name:"MISSIONE 01", subtitle:"ROTTA PIATTA",
+      desc:"Vola lungo una retta orizzontale. Il corridoio è dritto come un raggio laser.",
+      center:x=>0,           halfW:1.2, xRange:[-7,7], timeLimit:90,
+      hint:"Retta orizzontale",
+      solution:"Y = 0\n\nLa Y rimane sempre 0: una retta perfettamente piatta." },
+    { id:2,  name:"MISSIONE 02", subtitle:"ROTTA INCLINATA",
+      desc:"Il corridoio sale diagonalmente. Segui l'inclinazione!",
+      center:x=>x,           halfW:1.1, xRange:[-6,6], timeLimit:90,
+      hint:"Retta inclinata (pendenza 1)",
+      solution:"Y = X\n\nOgni unità a destra, sali di una unità." },
+    { id:3,  name:"MISSIONE 03", subtitle:"PENDENZA DOPPIA",
+      desc:"Salita ripida! La pendenza è doppia rispetto a prima.",
+      center:x=>2*x-1,       halfW:1.0, xRange:[-4,4], timeLimit:100,
+      hint:"Retta con pendenza e intercetta",
+      solution:"Y = 2*X - 1\n\nPendenza 2, intercetta -1 sull'asse Y." },
+    { id:4,  name:"MISSIONE 04", subtitle:"ARCO PARABOLICO",
+      desc:"Il corridoio curva! Non è più dritto: segui la parabola.",
+      center:x=>0.3*x*x-2,   halfW:1.1, xRange:[-5,5], timeLimit:110,
+      hint:"Parabola",
+      solution:"Y = 0.3*X^2 - 2\n\nParabola con vertice in (0, -2)." },
+    { id:5,  name:"MISSIONE 05", subtitle:"ARCO TRASLATO",
+      desc:"L'arco è spostato lateralmente. Il vertice non è più all'origine!",
+      center:x=>(x-2)*(x-2)-3, halfW:1.1, xRange:[-2,6], timeLimit:120,
+      hint:"Parabola traslata",
+      solution:"Y = (X-2)^2 - 3\n\nVertice in (2, -3)." },
+    { id:6,  name:"MISSIONE 06", subtitle:"ONDA SINUSOIDALE",
+      desc:"Il corridoio ondeggia come un serpente cosmico!",
+      center:x=>2*Math.sin(x), halfW:1.0, xRange:[-6,6], timeLimit:130,
+      hint:"Sinusoide",
+      solution:"Y = 2*sin(X)\n\nAmpiezza 2, periodo 2π (~6.28)." },
+    { id:7,  name:"MISSIONE 07", subtitle:"ZONA RISTRETTA",
+      desc:"Corridoio stretto! Massima precisione richiesta.",
+      center:x=>0.5*x*x-x,   halfW:0.85, xRange:[-3,5], timeLimit:130,
+      hint:"Parabola con termine lineare",
+      solution:"Y = 0.5*X^2 - X\n\nVertice in (1, -0.5)." },
+    { id:8,  name:"MISSIONE 08", subtitle:"CAMPO IPERBOLICOO",
+      desc:"Una forza gravitazionale divide lo spazio in due. Scegli un lato!",
+      center:x=>Math.abs(x)<0.5?null:3/x, halfW:1.0, xRange:[-6,6], timeLimit:140,
+      hint:"Iperbole",
+      solution:"Y = 3/X\n\nPassi dal ramo destro (X positivo) o sinistro (X negativo).\nX = 0 è una zona proibita!" },
+    { id:9,  name:"MISSIONE 09", subtitle:"ONDA SMORZATA",
+      desc:"Il corridoio pulsa sempre meno. Resta al centro!",
+      center:x=>Math.sin(x*2)*(4/(x*x+1)), halfW:0.9, xRange:[-5,5], timeLimit:150,
+      hint:"Funzione smorzata",
+      solution:"Y = sin(2*X) * 4/(X^2+1)\n\nL'ampiezza si riduce allontanandosi dall'origine." },
+    { id:10, name:"MISSIONE 10", subtitle:"BOSS: ROTTA IMPOSSIBILE",
+      desc:"Solo le navigatrici più abili arrivano in fondo. Buona fortuna!",
+      center:x=>Math.sin(x)*x*0.5+Math.cos(x*0.7), halfW:0.85, xRange:[-5,5], timeLimit:180,
+      hint:"Funzione composita avanzata",
+      solution:"Y = X*sin(X)*0.5 + cos(X*0.7)\n\nCombina oscillazione lineare crescente e coseno modulato." },
+  ]
+};
+
+/* ═══ SPRITE DRAWING ═══ */
+// Navicella pixel 10×8, orientata a destra (punta a dx)
+// 0=trasparente 1=corpo 2=cockpit(vetro) 3=motore(fuoco) 4=dettaglio
+function drawShip(ctx, cx, cy, cell, color, angle){
+  ctx.save();
+  ctx.translate(cx, cy);
+  if(angle) ctx.rotate(angle);
+  const map=[
+    [0,0,0,0,1,0,0,0,0,0],
+    [0,0,0,1,1,1,0,0,0,0],
+    [0,0,1,1,2,1,1,0,0,0],
+    [4,1,1,1,1,1,1,1,3,0],
+    [4,1,1,1,1,1,1,1,3,0],
+    [0,0,1,1,2,1,1,0,0,0],
+    [0,0,0,1,1,1,0,0,0,0],
+    [0,0,0,0,1,0,0,0,0,0],
+  ];
+  const W=map[0].length, H=map.length;
+  const ox=-W*cell/2, oy=-H*cell/2;
+  const pal=[null, color, '#a8e8ff', '#f0922a', '#f2e840'];
+  map.forEach((row,r)=>row.forEach((v,c)=>{
+    if(!v) return;
+    ctx.fillStyle=pal[v];
+    ctx.fillRect(ox+c*cell, oy+r*cell, cell, cell);
+  }));
+  ctx.restore();
+}
+
+function drawFlame(ctx, cx, cy, cell, t){
+  ctx.save(); ctx.translate(cx, cy);
+  const ang=t*20;
+  const flames=[
+    {dx:-cell*4.5, dy:-cell*0.5, col:'#f2e840', w:cell, h:cell},
+    {dx:-cell*5.5, dy:-cell*0.5, col:'#f0922a', w:cell, h:cell},
+    {dx:-cell*4,   dy: cell*0.5, col:'#f0922a', w:cell, h:cell},
+    {dx:-cell*6,   dy:-cell*1,   col:'#ff4444', w:cell*0.6, h:cell*0.6},
+  ];
+  flames.forEach(f=>{
+    if(Math.sin(ang+f.dx)>0.3) return; // flicker
+    ctx.fillStyle=f.col;
+    ctx.globalAlpha=0.7+0.3*Math.sin(ang+f.dy);
+    ctx.fillRect(f.dx, f.dy, f.w, f.h);
+  });
+  ctx.globalAlpha=1;
+  ctx.restore();
+}
+
+function drawExplosion(ctx, cx, cy, prog){
+  ctx.save(); ctx.translate(cx, cy);
+  const cols=['#f2e840','#f0922a','#ff4444','#ffffff','#ff8800','#b5107a'];
+  const dirs=[[1,0],[2,1],[1,2],[0,1],[-1,0],[-2,-1],[1,-2],[2,-1],[-1,2],[0,-2],[-2,1],[2,2],[-2,-2],[3,0],[0,3],[-1,-3]];
+  const r=5+prog*30;
+  dirs.forEach(([dx,dy],i)=>{
+    ctx.fillStyle=cols[i%cols.length];
+    ctx.globalAlpha=Math.max(0,1-prog)*0.9;
+    const s=Math.max(2, 8*(1-prog*0.7));
+    ctx.fillRect(dx*r-s/2, dy*r-s/2, s, s);
+  });
+  // flash
+  if(prog<0.2){
+    ctx.fillStyle='rgba(255,255,255,'+(0.8-prog*4)+')';
+    ctx.fillRect(-40,-40,80,80);
+  }
+  ctx.globalAlpha=1;
+  ctx.restore();
+}
+
+function drawPlanet(ctx, cx, cy, r, col1, col2, hasRing){
+  // pixelated filled circle
+  const step=3;
+  for(let dy=-r; dy<=r; dy+=step){
+    for(let dx=-r; dx<=r; dx+=step){
+      if(dx*dx+dy*dy > r*r) continue;
+      // simple highlight gradient: top-left brighter
+      const t = 0.5 + (dx*0.3 + dy*0.3)/(r*1.2);
+      const tc = Math.max(0,Math.min(1,t));
+      ctx.fillStyle = lerpHex(col1, col2, tc);
+      ctx.fillRect(cx+dx, cy+dy, step, step);
+    }
+  }
+  // atmosphere glow
+  ctx.save();
+  const glow=ctx.createRadialGradient(cx,cy,r*0.8,cx,cy,r*1.4);
+  glow.addColorStop(0,'rgba(255,255,255,0.08)');
+  glow.addColorStop(1,'transparent');
+  ctx.fillStyle=glow;
+  ctx.beginPath(); ctx.arc(cx,cy,r*1.4,0,Math.PI*2); ctx.fill();
+  if(hasRing){
+    ctx.strokeStyle='rgba(242,232,64,0.35)'; ctx.lineWidth=2; ctx.setLineDash([4,6]);
+    ctx.beginPath(); ctx.ellipse(cx,cy,r*1.8,r*0.5,-0.2,0,Math.PI*2); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  ctx.restore();
+}
+
+function drawAsteroid(ctx, cx, cy, size, seed){
+  const pts=7;
+  ctx.beginPath();
+  for(let i=0;i<=pts;i++){
+    const a=i/pts*Math.PI*2;
+    const jitter=0.55+0.45*((Math.sin(seed*11+i*4.1)+1)/2);
+    const rx=cx+Math.cos(a)*size*jitter;
+    const ry=cy+Math.sin(a)*size*jitter;
+    const sx=Math.round(rx/3)*3, sy=Math.round(ry/3)*3;
+    i===0 ? ctx.moveTo(sx,sy) : ctx.lineTo(sx,sy);
+  }
+  ctx.closePath();
+  ctx.fillStyle='#4a4560'; ctx.fill();
+  ctx.strokeStyle='#6a658a'; ctx.lineWidth=1.5; ctx.stroke();
+  // craters
+  ctx.fillStyle='rgba(0,0,0,0.35)';
+  ctx.fillRect(cx-size*0.35, cy-size*0.25, Math.max(2,size*0.28), Math.max(2,size*0.28));
+  ctx.fillRect(cx+size*0.1, cy+size*0.1, Math.max(2,size*0.18), Math.max(2,size*0.18));
+}
+
+function lerpHex(a,b,t){
+  const p=(h,s,e)=>parseInt(h.slice(s,e),16);
+  const r=Math.round(p(a,1,3)+(p(b,1,3)-p(a,1,3))*t);
+  const g=Math.round(p(a,3,5)+(p(b,3,5)-p(a,3,5))*t);
+  const bl=Math.round(p(a,5,7)+(p(b,5,7)-p(a,5,7))*t);
+  return `rgb(${r},${g},${bl})`;
+}
+
+/* ═══ STATE ═══ */
+const SHIP_COLORS=['#2edb8a','#f2e840','#f0922a','#b5107a','#1a8fa0','#ffffff','#a8e8ff','#ff6b6b'];
+const CURVE_COLORS=['#2edb8a','#f2e840','#f0922a','#1a8fa0','#b5107a','#a8e8ff','#ffccff'];
+const S={ shipName:'AURORA', shipColor:'#2edb8a', scores:{}, completed:new Set() };
+const $=id=>document.getElementById(id);
+const show=id=>{document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(id).classList.add('active');};
+
+function evalEq(expr,x){
+  try{
+    let e=expr
+      .replace(/\^/g,'**').replace(/\bsin\b/gi,'Math.sin').replace(/\bcos\b/gi,'Math.cos')
+      .replace(/\btan\b/gi,'Math.tan').replace(/\bsqrt\b/gi,'Math.sqrt')
+      .replace(/\babs\b/gi,'Math.abs').replace(/\blog\b/gi,'Math.log')
+      .replace(/\bln\b/gi,'Math.log').replace(/\bPI\b/g,'Math.PI')
+      .replace(/(\d)(x)/gi,'$1*$2').replace(/(\d)\(/g,'$1*(');
+    const fn=new Function('x','X',`"use strict";return (${e});`);
+    const r=fn(x,x);
+    return (typeof r==='number'&&isFinite(r))?r:null;
+  }catch{return null;}
+}
+
+/* ═══ STARS ═══ */
+let STARS=[];
+function genStars(W,H){
+  STARS=Array.from({length:250},()=>({
+    x:Math.random()*W, y:Math.random()*H,
+    b:0.15+Math.random()*0.9,
+    spd:0.05+Math.random()*0.5,
+    layer:Math.floor(Math.random()*3)
+  }));
+}
+let starOff=0;
+
+/* ═══ ASTEROIDS ═══ */
+function genAsteroids(lvl, W, H, scale, ox, oy){
+  const asts=[];
+  const[xMn,xMx]=lvl.xRange;
+  let tries=0;
+  while(asts.length<22 && tries<600){
+    tries++;
+    const wx=xMn+(xMx-xMn)*Math.random();
+    const cy=lvl.center(wx);
+    if(cy===null) continue;
+    const side=Math.random()<0.5?1:-1;
+    const wy=cy+side*(lvl.halfW+0.35+Math.random()*3.5);
+    const cx=ox+wx*scale, canY=oy-wy*scale;
+    if(cx<-40||cx>W+40||canY<-40||canY>H+40) continue;
+    asts.push({wx,wy,size:9+Math.random()*18,seed:Math.random()*99,
+               dx:(Math.random()-0.5)*0.006, dy:(Math.random()-0.5)*0.005});
+  }
+  return asts;
+}
+
+/* ═══ INTRO ═══ */
+(function(){
+  const picker=$('colorPicker');
+  SHIP_COLORS.forEach((hex,i)=>{
+    const b=document.createElement('div');
+    b.className='ship-color-btn'+(i===0?' sel':'');
+    b.style.background=hex;
+    b.addEventListener('click',()=>{
+      document.querySelectorAll('.ship-color-btn').forEach(x=>x.classList.remove('sel'));
+      b.classList.add('sel'); S.shipColor=hex; drawIntroShip();
+    });
+    picker.appendChild(b);
+  });
+  $('shipNameInput').addEventListener('input',()=>{ S.shipName=($('shipNameInput').value.trim()||'AURORA').toUpperCase(); });
+  $('btnStart').addEventListener('click',()=>{
+    S.shipName=($('shipNameInput').value.trim()||'AURORA').toUpperCase();
+    initLevels(); show('screen-levels');
+  });
+  $('btnCredits').addEventListener('click',()=>{
+    alert('🚀 ISTRUZIONI:\n\n1. Scrivi Y = ... nella casella traiettoria\n2. Premi LANCIA\n3. Se la navicella rimane nel corridoio verde → SUCCESSO!\n4. Se tocca un asteroide → ESPLOSIONE!\n\nPuoi lanciare più volte con equazioni diverse.\n\nSINTASSI:\n  X^2  sin(X)  cos(X)  sqrt(X)  abs(X)\n  2*X oppure 2X\n  (X-1)^2  X^2 + X - 1\n\nIn bocca al lupo, navigatrice! 🌟');
+  });
+  drawIntroShip();
+})();
+
+function drawIntroShip(){
+  const c=$('introShip'), ctx=c.getContext('2d');
+  ctx.clearRect(0,0,90,70);
+  drawShip(ctx,45,35,6,S.shipColor,0);
+}
+
+$('btnBackIntro').addEventListener('click',()=>show('screen-intro'));
+
+/* ═══ LEVELS ═══ */
+function initLevels(){
+  const grid=$('levelsGrid'); grid.innerHTML='';
+  GAME_CONFIG.levels.forEach((lvl,i)=>{
+    const locked=i>0&&!S.completed.has(GAME_CONFIG.levels[i-1].id);
+    const done=S.completed.has(lvl.id);
+    const sc=S.scores[lvl.id]||0;
+    const stars=done?(sc>1200?'★★★':sc>700?'★★☆':'★☆☆'):'☆☆☆';
+    const tile=document.createElement('div');
+    tile.className='level-tile'+(locked?' locked':'')+(done?' done':'');
+    tile.innerHTML=`
+      ${locked?'<span class="lv-lock" style="position:absolute;top:8px;right:10px;">🔒</span>':''}
+      <div class="lv-num">${lvl.name}</div>
+      <div class="lv-name">${lvl.subtitle}</div>
+      <div class="lv-desc">${lvl.desc}</div>
+      <div class="lv-stars">${stars}</div>`;
+    if(!locked) tile.addEventListener('click',()=>startLevel(lvl.id));
+    grid.appendChild(tile);
+  });
+}
+
+/* ═══ GAME ═══ */
+let raf=null, G={};
+
+function startLevel(id){
+  const lvl=GAME_CONFIG.levels.find(l=>l.id===id);
+  $('topbarBadge').textContent=lvl.name;
+  $('topbarName').textContent=lvl.subtitle;
+  $('missionDesc').textContent=lvl.desc;
+  $('hintBody').textContent=lvl.hint;   $('hintBody').classList.remove('show'); $('hintToggle').textContent='💡 TIPO DI EQUAZIONE ▼';
+  $('solBody').textContent=lvl.solution; $('solBody').classList.remove('show');  $('solToggle').textContent='🔑 SOLUZIONE ▼';
+  $('eqInput').value=''; $('eqError').textContent=''; $('eqInput').classList.remove('error');
+  $('curvesList').innerHTML='';
+  $('overlay').classList.remove('on');
+  setStatus('idle','IN ATTESA DELLA TRAIETTORIA...');
+  show('screen-game');
+  initG(lvl); resizeCanvas();
+  if(raf) cancelAnimationFrame(raf);
+  gameLoop();
+}
+
+function vpOf(lvl,W,H){
+  const span=lvl.xRange[1]-lvl.xRange[0], pad=0.11;
+  const scale=(W*(1-2*pad))/span;
+  return{scale, ox:W*pad+(-lvl.xRange[0])*scale, oy:H*0.5};
+}
+function w2c(wx,wy){ return{cx:G.ox+wx*G.scale, cy:G.oy-wy*G.scale}; }
+function c2w(cx,cy){ return{wx:(cx-G.ox)/G.scale, wy:-(cy-G.oy)/G.scale}; }
+
+function initG(lvl){
+  const canvas=$('gameCanvas');
+  const W=canvas.offsetWidth||800, H=canvas.offsetHeight||500;
+  const{scale,ox,oy}=vpOf(lvl,W,H);
+  genStars(W,H);
+  G={lvl,W,H,scale,ox,oy,
+     asteroids:genAsteroids(lvl,W,H,scale,ox,oy),
+     drawnCurves:[],
+     timeLeft:lvl.timeLimit,
+     last:performance.now(),
+     done:false, attempts:0,
+     anim:null};
+  updateHUD();
+}
+
+/* ── LOOP ── */
+function gameLoop(){
+  if(G.done) return;
+  const now=performance.now(), dt=Math.min((now-G.last)/1000,0.1); G.last=now;
+
+  if(!G.anim && G.lvl.timeLimit>0){
+    G.timeLeft=Math.max(0,G.timeLeft-dt);
+    if(G.timeLeft<=0){ endGame(false,'timeout'); return; }
+  }
+
+  starOff=(starOff+28*dt)%(G.W||800);
+
+  if(G.anim) tickAnim(dt);
+
+  // drift asteroids slowly
+  G.asteroids.forEach(a=>{ a.wx+=a.dx; a.wy+=a.dy; });
+
+  updateHUD();
+  drawScene();
+  raf=requestAnimationFrame(gameLoop);
+}
+
+/* ── ANIMATION ── */
+function tickAnim(dt){
+  const a=G.anim; a.t+=dt;
+
+  if(a.type==='fly'){
+    a.prog=Math.min(1, a.t/a.dur);
+    const[xMn,xMx]=G.lvl.xRange;
+    a.wx=xMn+(xMx-xMn)*a.prog;
+    a.wy=evalEq(a.expr, a.wx);
+
+    if(a.wy===null){ boom(a.wx, 0); return; }
+
+    // corridor check
+    const cy=G.lvl.center(a.wx);
+    if(cy!==null && Math.abs(a.wy-cy)>G.lvl.halfW){ boom(a.wx,a.wy); return; }
+
+    // compute tangent angle for rotation
+    const eps=0.05, wy2=evalEq(a.expr,a.wx+eps)||a.wy;
+    const{cx:x1,cy:y1}=w2c(a.wx,a.wy);
+    const{cx:x2,cy:y2}=w2c(a.wx+eps,wy2);
+    a.angle=Math.atan2(y2-y1,x2-x1);
+
+    if(a.prog>=1){ endGame(true); return; }
+  }
+
+  if(a.type==='explode'){
+    a.prog=Math.min(1, a.t/0.85);
+    if(a.prog>=1){
+      G.anim=null;
+      G.attempts++;
+      setStatus('err','💥 IMPATTO! Riprova con una traiettoria diversa.');
+    }
+  }
+}
+
+function boom(wx,wy){
+  const{cx,cy}=w2c(wx,wy);
+  G.anim={type:'explode', t:0, prog:0, cx, cy};
+  setStatus('err','⚠ COLLISIONE!');
+}
+
+/* ── DRAW ── */
+function drawScene(){
+  const cv=$('gameCanvas'), ctx=cv.getContext('2d');
+  const W=cv.width, H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  drawSpace(ctx,W,H);
+  drawCorridor(ctx,W,H);
+  drawGrid(ctx,W,H);
+  drawAxes(ctx,W,H);
+  G.drawnCurves.forEach(c=>drawCurve(ctx,W,c));
+  drawAsteroids(ctx);
+  drawPlanets(ctx,W,H);
+
+  const a=G.anim;
+  if(a){
+    if(a.type==='fly'){
+      const{cx,cy}=w2c(a.wx,a.wy);
+      drawFlame(ctx,cx,cy,4,a.t);
+      drawShip(ctx,cx,cy,4,S.shipColor,a.angle||0);
+    }
+    if(a.type==='explode') drawExplosion(ctx,a.cx,a.cy,a.prog);
+  }
+}
+
+function drawSpace(ctx,W,H){
+  const bg=ctx.createLinearGradient(0,0,W,H);
+  bg.addColorStop(0,'#060810'); bg.addColorStop(0.5,'#0a0d1a'); bg.addColorStop(1,'#070a14');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+
+  // parallax stars
+  STARS.forEach(s=>{
+    const spd=[0.12,0.3,0.55][s.layer];
+    const sx=((s.x+starOff*spd)%W+W)%W;
+    const blink=s.b*(0.65+0.35*Math.sin(performance.now()/900*s.spd+s.x));
+    ctx.fillStyle=`rgba(255,255,255,${Math.min(1,blink)})`;
+    ctx.fillRect(sx,s.y,1,1);
+    if(blink>0.75){
+      ctx.fillStyle=`rgba(200,230,255,${blink*0.3})`;
+      ctx.fillRect(sx-1,s.y,1,1); ctx.fillRect(sx+1,s.y,1,1);
+      ctx.fillRect(sx,s.y-1,1,1); ctx.fillRect(sx,s.y+1,1,1);
+    }
+  });
+
+  // nebula blobs
+  [[W*0.15,H*0.25,'rgba(26,143,160,0.07)'],[W*0.8,H*0.6,'rgba(181,16,122,0.07)']].forEach(([nx,ny,col])=>{
+    const g=ctx.createRadialGradient(nx,ny,0,nx,ny,W*0.22);
+    g.addColorStop(0,col); g.addColorStop(1,'transparent');
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  });
+}
+
+function drawCorridor(ctx,W,H){
+  // fill band
+  const step=3;
+  for(let px=0;px<=W;px+=step){
+    const wx=c2w(px,0).wx;
+    const cy=G.lvl.center(wx);
+    if(cy===null) continue;
+    const{cy:top}   =w2c(wx,cy+G.lvl.halfW);
+    const{cy:bottom}=w2c(wx,cy-G.lvl.halfW);
+    ctx.fillStyle='rgba(46,219,138,0.055)';
+    ctx.fillRect(px,top,step+1,Math.max(1,bottom-top));
+  }
+  // dashed border lines
+  ['top','bot'].forEach(side=>{
+    ctx.beginPath(); ctx.setLineDash([7,7]);
+    ctx.strokeStyle='rgba(46,219,138,0.5)'; ctx.lineWidth=1.5;
+    let pen=false;
+    for(let px=0;px<=W;px+=2){
+      const wx=c2w(px,0).wx;
+      const cy=G.lvl.center(wx);
+      if(cy===null){pen=false;continue;}
+      const wy=cy+(side==='top'?G.lvl.halfW:-G.lvl.halfW);
+      const{cy:cY}=w2c(wx,wy);
+      if(!pen){ctx.moveTo(px,cY);pen=true;}else ctx.lineTo(px,cY);
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+  });
+}
+
+function drawGrid(ctx,W,H){
+  ctx.strokeStyle='rgba(26,143,160,0.09)'; ctx.lineWidth=1; ctx.setLineDash([]);
+  const x0=Math.ceil(c2w(0,0).wx),x1=Math.floor(c2w(W,0).wx);
+  for(let xi=x0;xi<=x1;xi++){const{cx}=w2c(xi,0);ctx.beginPath();ctx.moveTo(cx,0);ctx.lineTo(cx,H);ctx.stroke();}
+  const y0=Math.ceil(c2w(0,H).wy),y1=Math.floor(c2w(0,0).wy);
+  for(let yi=y0;yi<=y1;yi++){const{cy}=w2c(0,yi);ctx.beginPath();ctx.moveTo(0,cy);ctx.lineTo(W,cy);ctx.stroke();}
+}
+
+function drawAxes(ctx,W,H){
+  const{cx:ax,cy:ay}=w2c(0,0);
+  ctx.strokeStyle='rgba(46,219,138,0.3)'; ctx.lineWidth=1.5; ctx.setLineDash([]);
+  ctx.beginPath();ctx.moveTo(0,ay);ctx.lineTo(W,ay);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(ax,0);ctx.lineTo(ax,H);ctx.stroke();
+  ctx.fillStyle='rgba(46,219,138,0.55)'; ctx.font='bold 8px "Press Start 2P",monospace';
+  ctx.textAlign='center'; ctx.textBaseline='top';
+  const x0=Math.ceil(c2w(0,0).wx),x1=Math.floor(c2w(W,0).wx);
+  for(let xi=x0;xi<=x1;xi++){if(!xi)continue;const{cx}=w2c(xi,0);ctx.fillText(xi,cx,ay+3);}
+  ctx.textAlign='right'; ctx.textBaseline='middle';
+  const y0=Math.ceil(c2w(0,H).wy),y1=Math.floor(c2w(0,0).wy);
+  for(let yi=y0;yi<=y1;yi++){if(!yi)continue;const{cy}=w2c(0,yi);ctx.fillText(yi,ax-4,cy);}
+  ctx.fillStyle='rgba(46,219,138,0.75)'; ctx.font='bold 9px "Press Start 2P",monospace';
+  ctx.textAlign='right';ctx.textBaseline='top';ctx.fillText('X',W-2,ay+3);
+  ctx.textAlign='left';ctx.fillText('Y',ax+4,2);
+}
+
+function drawCurve(ctx,W,curve){
+  const step=2; ctx.beginPath(); let pen=false;
+  for(let px=0;px<=W;px+=step){
+    const wx=c2w(px,0).wx, wy=evalEq(curve.expr,wx);
+    if(wy===null||!isFinite(wy)){pen=false;continue;}
+    const{cy}=w2c(wx,wy);
+    if(!pen){ctx.moveTo(px,cy);pen=true;}else ctx.lineTo(px,cy);
+  }
+  ctx.strokeStyle=curve.color; ctx.lineWidth=2; ctx.setLineDash([5,5]); ctx.stroke(); ctx.setLineDash([]);
+}
+
+function drawAsteroids(ctx){
+  G.asteroids.forEach(a=>{
+    const{cx,cy}=w2c(a.wx,a.wy);
+    drawAsteroid(ctx,cx,cy,a.size,a.seed);
+  });
+}
+
+function drawPlanets(ctx,W,H){
+  const lvl=G.lvl;
+  const[xMn,xMx]=lvl.xRange;
+  const cyFrom=lvl.center(xMn)||0, cyTo=lvl.center(xMx)||0;
+  const{cx:px1,cy:py1}=w2c(xMn,cyFrom);
+  const{cx:px2,cy:py2}=w2c(xMx,cyTo);
+
+  drawPlanet(ctx,px1-8,py1,20,'#2a6060','#4a9080',false);
+  drawPlanet(ctx,px2+8,py2,26,'#1a6040','#2edb8a',true);
+
+  ctx.font='6px "Press Start 2P",monospace'; ctx.textAlign='center';
+  ctx.fillStyle='rgba(46,219,138,0.65)';
+  ctx.fillText('PARTENZA',px1-8,py1+28);
+  ctx.fillText('ARRIVO',  px2+8,py2+34);
+
+  // draw ship at start if not animating
+  if(!G.anim){
+    drawShip(ctx,px1+14,py1,4,S.shipColor,0);
+  }
+}
+
+/* ── LAUNCH ── */
+function handleLaunch(){
+  if(G.anim?.type==='fly') return;
+  const expr=$('eqInput').value.trim();
+  if(!expr) return;
+  $('eqInput').classList.remove('error'); $('eqError').textContent='';
+  // Valida su piu punti: basta che almeno uno restituisca un numero finito
+  const testXs=[1,-1,2,-2,0.5,3,-3];
+  const isValid=testXs.some(tx=>evalEq(expr,tx)!==null);
+  if(!isValid){
+    $('eqInput').classList.add('error');
+    $('eqError').textContent='! EQUAZIONE NON VALIDA';
+    return;
+  }
+  const color=CURVE_COLORS[G.drawnCurves.length%CURVE_COLORS.length];
+  G.drawnCurves.push({expr,color}); updateCurvesList();
+  G.attempts++;
+  const[xMn]=G.lvl.xRange;
+  const wy0=evalEq(expr,xMn)||0;
+  G.anim={type:'fly', expr, t:0, prog:0, dur:4, wx:xMn, wy:wy0, angle:0};
+  setStatus('fly',`🚀 ${S.shipName} IN VOLO!`);
+}
+
+/* ── END ── */
+function endGame(won,reason=''){
+  if(G.done) return;
+  G.done=true; cancelAnimationFrame(raf);
+  let pts=0;
+  if(won){
+    const tf=G.timeLeft/(G.lvl.timeLimit||90);
+    const ab=Math.max(0,5-G.attempts)*120;
+    pts=Math.round(400+tf*800+ab);
+    if(!S.scores[G.lvl.id]||pts>S.scores[G.lvl.id]) S.scores[G.lvl.id]=pts;
+    S.completed.add(G.lvl.id);
+  }
+  $('overlayIcon').textContent  = won?'🎉':(reason==='timeout'?'⏰':'💥');
+  $('overlayTitle').textContent = won?'MISSIONE COMPIUTA!':(reason==='timeout'?'TEMPO SCADUTO!':'ROTTA ERRATA!');
+  $('overlayMsg').textContent   = won
+    ? `${S.shipName} ha attraversato il corridoio spaziale!`
+    : (reason==='timeout' ? `${S.shipName} ha esaurito il carburante...` : `${S.shipName} ha colpito un asteroide!`);
+  $('overlayScore').textContent = won?`${pts} PT`:'0 PT';
+  const next=GAME_CONFIG.levels.find(l=>l.id===G.lvl.id+1);
+  $('btnNextLevel').style.display=(won&&next)?'inline-block':'none';
+  $('overlay').classList.add('on');
+  if(won) confetti();
+}
+
+/* ── HUD / UI ── */
+function updateHUD(){
+  $('hudAttempts').textContent = G.attempts||0;
+  $('hudTimer').textContent    = Math.ceil(G.timeLeft||0);
+  $('timerBlock').classList.toggle('danger', G.timeLeft<=15);
+  $('hudScore').textContent    = S.scores[G.lvl?.id]||0;
+}
+function setStatus(type,msg){
+  const el=$('statusBar'); el.className='status-bar';
+  if(type!=='idle') el.classList.add(type);
+  el.textContent=msg;
+}
+function updateCurvesList(){
+  const list=$('curvesList'); list.innerHTML='';
+  G.drawnCurves.forEach((c,i)=>{
+    const row=document.createElement('div'); row.className='curve-row';
+    row.innerHTML=`<div class="curve-px" style="background:${c.color}"></div><span>Y=${c.expr}</span><button class="curve-remove-btn">✕</button>`;
+    row.querySelector('button').addEventListener('click',()=>{G.drawnCurves.splice(i,1);updateCurvesList();});
+    list.appendChild(row);
+  });
+}
+
+/* ── RESIZE ── */
+function resizeCanvas(){
+  const cv=$('gameCanvas');
+  cv.width=cv.offsetWidth; cv.height=cv.offsetHeight;
+  if(G.lvl){
+    G.W=cv.width; G.H=cv.height;
+    const vp=vpOf(G.lvl,G.W,G.H);
+    G.scale=vp.scale; G.ox=vp.ox; G.oy=vp.oy;
+    genStars(G.W,G.H);
+    G.asteroids=genAsteroids(G.lvl,G.W,G.H,G.scale,G.ox,G.oy);
+  }
+}
+window.addEventListener('resize',resizeCanvas);
+
+/* ── CONFETTI ── */
+function confetti(){
+  ['⭐','✨','🚀','💫','🌟','🟡','🔵'].forEach(e=>{
+    for(let i=0;i<4;i++){
+      const el=document.createElement('div'); el.className='pxc'; el.textContent=e;
+      el.style.left=Math.random()*100+'vw';
+      const dur=1.5+Math.random()*2;
+      el.style.setProperty('--r',Math.random()*720+'deg');
+      el.style.setProperty('--dx',(Math.random()-0.5)*200+'px');
+      el.style.animation=`pxfall ${dur}s ${Math.random()*0.7}s linear forwards`;
+      document.body.appendChild(el);
+      setTimeout(()=>el.remove(),(dur+1.5)*1000);
+    }
+  });
+}
+
+/* ── EVENTS ── */
+$('btnLaunch').addEventListener('click',handleLaunch);
+$('eqInput').addEventListener('keydown',e=>{if(e.key==='Enter')handleLaunch();});
+$('btnReset').addEventListener('click',()=>{
+  if(G.anim?.type==='fly') return;
+  G.drawnCurves=[]; updateCurvesList(); G.anim=null;
+  setStatus('idle','IN ATTESA DELLA TRAIETTORIA...');
+  $('eqInput').value=''; $('eqError').textContent=''; $('eqInput').classList.remove('error');
+});
+$('hintBox').addEventListener('click',()=>{
+  const b=$('hintBody'),v=b.classList.toggle('show');
+  $('hintToggle').textContent=v?'💡 TIPO DI EQUAZIONE ▲':'💡 TIPO DI EQUAZIONE ▼';
+});
+$('solBox').addEventListener('click',()=>{
+  const b=$('solBody'),v=b.classList.toggle('show');
+  $('solToggle').textContent=v?'🔑 SOLUZIONE ▲':'🔑 SOLUZIONE ▼';
+});
+$('btnBackLevels').addEventListener('click',()=>{
+  if(raf)cancelAnimationFrame(raf); G.done=true;
+  $('overlay').classList.remove('on'); initLevels(); show('screen-levels');
+});
+$('btnNextLevel').addEventListener('click',()=>{
+  $('overlay').classList.remove('on');
+  const next=GAME_CONFIG.levels.find(l=>l.id===G.lvl.id+1);
+  if(next) startLevel(next.id);
+});
+$('btnRetry').addEventListener('click',()=>{ $('overlay').classList.remove('on'); startLevel(G.lvl.id); });
+$('btnOverlayLevels').addEventListener('click',()=>{
+  $('overlay').classList.remove('on');
+  if(raf)cancelAnimationFrame(raf); G.done=true; initLevels(); show('screen-levels');
+});
+</script>
+</body>
+</html>
