@@ -651,7 +651,7 @@ function tickAnim(dt){
     if(a.wy===null){ boom(a.wx, 0); return; }
 
     // corridor check
-    const cy=evalEq(lvl.equation, a.wx);
+    const cy=evalEq(G.lvl.equation, a.wx);
     if(cy!==null && Math.abs(a.wy-cy)>G.lvl.corridorHalfW){ boom(a.wx,a.wy); return; }
 
     // compute tangent angle for rotation
@@ -735,7 +735,7 @@ function drawCorridor(ctx,W,H){
   const step=3;
   for(let px=0;px<=W;px+=step){
     const wx=c2w(px,0).wx;
-    const cy=evalEq(lvl.equation, wx);
+    const cy=evalEq(G.lvl.equation, wx);
     if(cy===null) continue;
     const{cy:top}   =w2c(wx,cy+G.lvl.corridorHalfW);
     const{cy:bottom}=w2c(wx,cy-G.lvl.corridorHalfW);
@@ -749,7 +749,7 @@ function drawCorridor(ctx,W,H){
     let pen=false;
     for(let px=0;px<=W;px+=2){
       const wx=c2w(px,0).wx;
-      const cy=evalEq(lvl.equation, wx);
+      const cy=evalEq(G.lvl.equation, wx);
       if(cy===null){pen=false;continue;}
       const wy=cy+(side==='top'?G.lvl.corridorHalfW:-G.lvl.corridorHalfW);
       const{cy:cY}=w2c(wx,wy);
@@ -804,8 +804,8 @@ function drawAsteroids(ctx){
 
 function drawPlanets(ctx,W,H){
   const lvl=G.lvl;
-  const[xMn,xMx]=lvl.xRange;
-  const cyFrom=evalEq(lvl.equation, xMn)||0, cyTo=evalEq(lvl.equation, xMx)||0;
+  const[xMn,xMx]=G.lvl.xRange;
+  const cyFrom=evalEq(G.lvl.equation, xMn)||0, cyTo=evalEq(G.lvl.equation, xMx)||0;
   const{cx:px1,cy:py1}=w2c(xMn,cyFrom);
   const{cx:px2,cy:py2}=w2c(xMx,cyTo);
 
